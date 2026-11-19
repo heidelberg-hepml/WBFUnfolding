@@ -1,0 +1,46 @@
+# @package _global_
+# Background-subtraction classifier at parton level: 3-fold cross-fitting; the paper merges five
+# runs with train.kfold_seed=0..4 (experiments/merge_kfold_dumps.py). dataset.ttbar_event_weights
+# is the output of experiments/ttbar_chain_reweighting.py.
+#   python run.py -cn paper/bkg_classifier train.kfold_seed=0 \
+#       dataset.ttbar_event_weights=<ttbar_run>/weights_particle_to_parton.npy
+defaults:
+  - /classify
+  - override /model: Classifier-Transformer
+  - _self_
+
+run:
+  name: bkg-clf-kseed${train.kfold_seed}
+seed: 0
+model:
+  resid_pdrop: 0.1
+  attn_pdrop: 0.1
+dataset:
+  truth_level: parton
+  ttbar_truth_level: gen
+  ttbar_event_weights: ???
+  use_njets: true
+  gaussianize: true
+  explicit_split:
+    use: true
+    trn: [0.10, 0.95]
+    tst: [0.00, 0.10]
+    val: [0.95, 1.00]
+  features:
+    dphi_jj: false
+    dphi_jj_signed_eta: true
+train:
+  ensemble: 3
+  kfold: true
+  kfold_seed: 0
+  nits: 100_000
+  lr: 0.0001
+  weight_decay: 0.0001
+  scheduler: ReduceLROnPlateau
+  lr_factor: 0.5
+  lr_patience: 10
+  early_stopping:
+    use: false
+evaluate:
+  evaluate_best: false
+  model_name: final

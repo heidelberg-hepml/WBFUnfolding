@@ -1,0 +1,113 @@
+dataset:
+  n_data: null
+
+  use_HWW: true
+  use_ttbar: true
+  use_WWjj: true
+
+  HWW:
+    path_parton: ${data_dir}/reco-hard_hww_hard.npy
+    path_gen: ${data_dir}/reco-gen_hww_gen.npy
+    
+    path_reco_corresponding_to_parton: ${data_dir}/reco-hard_hww_rec.npy
+    path_reco_corresponding_to_gen: ${data_dir}/reco-gen_hww_rec.npy
+
+  ttbar:
+    path_parton: ${trimmed_dir}/reco-hard_ttbar_nobjet_nocjv_noolv_hard.npy
+    path_gen: ${trimmed_dir}/reco-gen_ttbar_nobjet_nocjv_noolv_gen.npy
+
+    path_reco_corresponding_to_parton: ${trimmed_dir}/reco-hard_ttbar_nobjet_nocjv_noolv_rec.npy
+    path_reco_corresponding_to_gen: ${trimmed_dir}/reco-gen_ttbar_nobjet_nocjv_noolv_rec.npy
+
+  WWjj:
+    path_parton: ${trimmed_dir}/reco-hard_wwjj_hard.npy
+    path_gen: ${trimmed_dir}/reco-gen_wwjj_gen.npy
+
+    path_reco_corresponding_to_parton: ${trimmed_dir}/reco-hard_wwjj_rec.npy
+    path_reco_corresponding_to_gen: ${trimmed_dir}/reco-gen_wwjj_rec.npy
+  
+  
+  trn_tst_val: [0.9, 0.0, 0.1] # [train, test, validation] splits
+
+  # Held-out fraction (file order, last `holdout_frac` of each raw sample) used as the APP pool:
+  # p_data is built from it and the classifier weights are applied + dumped on it, so p_data is
+  # disjoint from the classifier's training. MUST match dataset.holdout_frac in unfolding_defaults.yaml
+  # so the unfolder excludes the same events from its training. holdout_frac: 0.0 -> legacy behavior
+  # (p_data == train split, dumped from "trn").
+  holdout_frac: 0.1
+
+  # Explicit file-order split: each split = a [lo, hi) fraction slice of EVERY source file.
+  # Overrides holdout_frac / trn_tst_val when use=true. Membership is decided by file position
+  # alone, so containment w.r.t. the unfolder's contiguous split is exact
+  explicit_split:
+    use: false
+    trn: [0.10, 0.95]
+    tst: [0.00, 0.10]
+    val: [0.95, 1.00]
+    dump_split: trn   # which split's weights + p_data npys get dumped for the unfolder
+
+  # Which truth level the classifier's reco + dumped truth correspond to. Selects which reco file
+  # is classified and which truth file is dumped for the unfolder:
+  #   gen    -> path_reco_corresponding_to_gen    + path_gen    (dump p_data_gen.npy)     [particle]
+  #   parton -> path_reco_corresponding_to_parton + path_parton (dump p_data_parton.npy)  [parton]
+  # MUST match the unfolder's dataset.unfold_to (particle<->gen, parton<->parton) it reweights.
+  truth_level: gen
+  # Chain the BACKGROUND (ttbar, WWjj) reco is taken from; null = same as truth_level. "gen" with
+  # truth_level=parton trains the parton classifier on the 32x larger gen-chain ttbar (same reco cuts).
+  background_truth_level: null
+  # Chain of the ttbar reco alone (null = background_truth_level), plus optional per-event weights
+  # row-aligned with that ttbar file (e.g. particle-cut ttbar reweighted onto the parton-cut shape:
+  # experiments/ttbar_chain_reweighting.py -> weights_particle_to_parton.npy).
+  ttbar_truth_level: null
+  ttbar_event_weights: null
+  # Seed of a permutation applied to the ttbar rows (with their event weights and raw arrays) BEFORE
+  # any split; null = file order. The ttbar files are two sub-samples with the second one at both file
+  # ends, so file-order splits give trn/val/tst different ttbar.
+  # The permutation is stored in the dump (ttbar_row_perm) to map rows back to the file.
+  # Not needed with the trimmed background files (uniform; experiments/trim_background_files.py).
+  shuffle_ttbar_seed: null
+  # true: the reco jet multiplicity (file column 20) is a classifier input; false = legacy constant 2
+  use_njets: false
+
+  # Physics preprocessing for the classifier inputs (log-pt / arctanh-phi / log-mass / mT map,
+  # mirroring the unfolder). false = legacy standardization-only. See classification._gaussianize.
+  gaussianize: false
+
+  channels:
+  - 0   # l1_pt
+  - 1   # l1_phi
+  - 2   # l1_eta
+  # - 3   # l1_mass
+  - 4   # l2_pt
+  - 5   # l2_phi
+  - 6   # l2_eta
+  # - 7   # l2_mass
+  - 8   # j1_pt
+  - 9   # j1_phi
+  - 10  # j1_eta
+  - 11  # j1_mass
+  - 12  # j2_pt
+  - 13  # j2_phi
+  - 14  # j2_eta
+  - 15  # j2_mass
+  - 16  # miss_pt
+  - 17  # miss_phi
+  # - 18  # miss_eta
+  # - 19  # miss_mass
+  # - 20  # multiplicity
+
+
+evaluate:
+  save_samples: false
+  save_data: false
+  evaluate_best: false
+  model_name: final
+
+# plot:
+#   include_SM_line: false
+#   include_EFTchw0p5_line: false
+#   include_EFT_chwtil5_line: false
+
+defaults:
+  - default
+  - _self_

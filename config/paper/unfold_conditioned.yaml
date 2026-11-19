@@ -1,0 +1,21 @@
+# @package _global_
+# Parton-level unfolder trained on all five hypotheses and conditioned on the label
+# (ids 0..4 = SM, CP-even(+), CP-even(-), CP-odd(+), CP-odd(-)), with balanced sampling.
+#   python run.py -cn paper/unfold_conditioned
+defaults:
+  - /unfold
+  - _self_
+
+run:
+  name: unfold-conditioned
+seed: 0
+dataset:
+  unfold_to: parton
+  holdout_frac: 0
+  combined:
+    use: true
+    processes: [signal, EFT_chw0p5, EFT_chwm0p5, EFT_chwtil5, EFT_chwtilm2]
+    n_datasets: 5
+    dataset_ids: true
+    condition_model: true
+    balance_mode: strict

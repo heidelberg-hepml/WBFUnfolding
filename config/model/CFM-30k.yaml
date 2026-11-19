@@ -1,0 +1,4 @@
+model: CFM
+network: MLP
+hidden_layers: 5
+internal_size: 72

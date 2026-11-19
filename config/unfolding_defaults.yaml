@@ -1,0 +1,183 @@
+dataset:
+  n_data: null
+
+  process: signal # pick your process (signal | EFT_chw0p5 | EFT_chwtil5 | p_data)
+  unfold_to: particle # particle/parton
+
+
+  signal:
+
+    data_path: ${data_dir}
+    
+    path_parton: reco-hard_hww_hard.npy
+    path_gen:   reco-gen_hww_gen.npy
+    
+    path_reco_corresponding_to_parton:   reco-hard_hww_rec.npy
+    path_reco_corresponding_to_gen:     reco-gen_hww_rec.npy
+    
+
+  # p_data inference: set data_path to the classifier run_dir that contains the .npy dumps
+  p_data:
+    data_path: /path/to/classifier_run  # override per run
+    path_parton: p_data_parton.npy
+    path_gen:    p_data_gen.npy   # placeholder; must exist with N matching p_data_reco.npy
+    path_reco:   p_data_reco.npy
+    path_reco_corresponding_to_gen:    ${dataset.p_data.path_reco}
+    path_reco_corresponding_to_parton: ${dataset.p_data.path_reco}  # dormant: gen-only flow
+
+  # Background processes. Full entries (mirroring config/classifying_defaults.yaml) so they can be
+  # used both as combined-training inputs (dataset.combined.processes) and by run_data_unfolding's
+  # value-matching mask recovery (which reads path_reco_corresponding_to_gen). Paths are absolute, so
+  # os.path.join(data_path, path_*) resolves to the absolute path regardless of data_path.
+  ttbar:
+    data_path: ${data_dir}
+    path_parton: ${trimmed_dir}/reco-hard_ttbar_nobjet_nocjv_noolv_hard.npy
+    path_gen:    ${trimmed_dir}/reco-gen_ttbar_nobjet_nocjv_noolv_gen.npy
+    path_reco_corresponding_to_parton: ${trimmed_dir}/reco-hard_ttbar_nobjet_nocjv_noolv_rec.npy
+    path_reco_corresponding_to_gen:    ${trimmed_dir}/reco-gen_ttbar_nobjet_nocjv_noolv_rec.npy
+  WWjj:
+    data_path: ${data_dir}
+    path_parton: ${trimmed_dir}/reco-hard_wwjj_hard.npy
+    path_gen:    ${trimmed_dir}/reco-gen_wwjj_gen.npy
+    path_reco_corresponding_to_parton: ${trimmed_dir}/reco-hard_wwjj_rec.npy
+    path_reco_corresponding_to_gen:    ${trimmed_dir}/reco-gen_wwjj_rec.npy
+
+  EFT_chw0p5:
+    data_path: ${data_dir}
+    
+    path_parton: reco-hard_hww_chw0p5_hard.npy
+    path_gen: reco-gen_hww_chw0p5_gen.npy 
+    
+    path_reco_corresponding_to_parton: reco-hard_hww_chw0p5_rec.npy
+    path_reco_corresponding_to_gen: reco-gen_hww_chw0p5_rec.npy
+
+
+  EFT_chwm0p5:   # CP-even(-), c_HW = -0.5
+    data_path: ${data_dir}
+    path_parton: reco-hard_hww_chwm0p5_hard.npy
+    path_gen: reco-gen_hww_chwm0p5_gen.npy
+    path_reco_corresponding_to_parton: reco-hard_hww_chwm0p5_rec.npy
+    path_reco_corresponding_to_gen: reco-gen_hww_chwm0p5_rec.npy
+
+  EFT_chwtilm2:  # CP-odd(-), c_HWtilde = -2
+    data_path: ${data_dir}
+    path_parton: reco-hard_hww_chwtilm2p0_hard.npy
+    path_gen: reco-gen_hww_chwtilm2p0_gen.npy
+    path_reco_corresponding_to_parton: reco-hard_hww_chwtilm2p0_rec.npy
+    path_reco_corresponding_to_gen: reco-gen_hww_chwtilm2p0_rec.npy
+
+  EFT_chwtil5:
+    data_path: ${data_dir}
+
+    path_parton: reco-hard_hww_chwtil5p0_hard.npy
+    path_gen: reco-gen_hww_chwtil5p0_gen.npy
+    
+    path_reco_corresponding_to_parton: reco-hard_hww_chwtil5p0_rec.npy
+    path_reco_corresponding_to_gen: reco-gen_hww_chwtil5p0_rec.npy
+
+
+  data_path:   ${dataset.${dataset.process}.data_path}
+  path_parton: ${dataset.${dataset.process}.path_parton}
+  path_gen:    ${dataset.${dataset.process}.path_gen}
+  path_reco_corresponding_to_parton: ${dataset.${dataset.process}.path_reco_corresponding_to_parton}
+  path_reco_corresponding_to_gen:    ${dataset.${dataset.process}.path_reco_corresponding_to_gen}
+
+  trn_tst_val: [0.75, 0.2, 0.05] # [train, test, validation] splits
+
+  # Held-out APP fraction (file order, last `holdout_frac` of each raw file). In combined training the
+  # unfolder loads only the first (1 - holdout_frac) of each process so it never trains on the events
+  # that make up p_data. MUST match dataset.holdout_frac in classifying_defaults.yaml.
+  holdout_frac: 0.1
+  # relabel the truth jets so q1/q2 follow the p_T-ordered reco jets (dR matching); parton files
+  # store the quarks in random order w.r.t. reco
+  match_parton_jets: true
+  # standardization statistics from the training split only (first trn_tst_val[0] of the rows); evaluations
+  # on other samples reuse them. Old run configs lack the key -> all events, as they were trained
+  standardize_on_trn: true
+  # parton-level unfolding: also condition on the reco jet masses (measured, not redundant). Runs whose
+  # saved config lacks this key load as false (their models were trained without them).
+  cond_jet_masses: true
+  
+  parameterization:
+    naive:
+      use: false
+      channels: ${dataset.channels}
+    transverse_mass:
+      use: true
+      channels: []
+      # parton only: do not unfold pT_ll and dphi_ll-miss; solve them from m_T and the exact p_T balance
+      # (phys.complete_balanced). The reco condition keeps all 14 features.
+      balanced: false
+      # STANDARD for parton level (switched off automatically for particle level): valid by construction,
+      # m_T and dphi_jj unfolded directly, exact p_T balance (phys.complete_valid; 12 unfolded features).
+      # Default since 2026-10-27 ("all cuts enforced"): valid_jets=ht_nu, jet_pt_cut=30, jj_cuts=true, reco_relative,
+      # pt_cuts {0: 22} and dataset.match_parton_jets: every unfolded event passes the parton quark cuts.
+      # Previous default (c): valid_jets=ht_dphi, jet_pt_cut=null, jj_cuts=false.
+      valid: true
+      # jets of the valid parameterization: ratio = unfold z = pT_j2/pT_j1 and dphi_jj (pT_j1 = pT_H/D);
+      # direct = unfold pT_j1 and phi_j1 - phi_H, p_j2 = -(p_H + p_j1);
+      # symmetric = unfold k = (p_j1 - p_j2)/2, p_j1,2 = -p_H/2 +- k
+      # dphi_pt2 = unfold pT_j2 and dphi_jj (per-event range, loop if pT_j2 > pT_H), both jets > 30;
+      # ht_dphi = unfold H_T and dphi_jj (loop: which jet is harder); ht_nu = H_T and the elliptic angle nu
+      valid_jets: ht_nu
+      # truth p_T cuts built into the p_T transform, {column: cut}; null = log p_T
+      pt_cuts: {0: 22}
+      # valid_jets=direct: bound phi_j1 - phi_H per event so the derived jet has pT_j2 > j2_pt_cut (null = no bound)
+      j2_pt_cut: null
+      # valid_jets=symmetric/ht_dphi/ht_nu: both jets pass jet_pt_cut by construction (null = no bound)
+      jet_pt_cut: 30.0
+      # valid_jets=ht_dphi/ht_nu: eta_j1/eta_j2 unfolded as bounded (deta_jj, centre) so that m_jj > 450,
+      # |deta_jj| > 2.1 and |eta_q| < 4.5 hold by construction (not reco-relative)
+      jj_cuts: true
+      # leptons of the valid parameterization: ratio = unfold r = m_ll/m_T (pT_l2 = m_ll^2/[2 pT_l1 (cosh - cos)]);
+      # direct = unfold log(pT_l2 - 15), log(pT_l1 - max(22, pT_l2)), log(m_T - m_ll) (no division)
+      valid_leptons: ratio
+      # unfold each truth feature relative to the reco value of the same event (the condition)
+      reco_relative: true
+      # valid_leptons=direct: m_T coordinate, offset = log(m_T - m_ll), standard = usual m_T map
+      lep_mT_coord: offset
+  
+  special:
+    unfold_jets_only: false
+    unfold_higgs_system_only: false
+    
+  channels:
+  - 0   # l1_pt
+  - 1   # l1_phi
+  - 2   # l1_eta
+  # - 3   # l1_mass
+  - 4   # l2_pt
+  - 5   # l2_phi
+  - 6   # l2_eta
+  # - 7   # l2_mass
+  - 8   # j1_pt
+  - 9   # j1_phi
+  - 10  # j1_eta
+  - 11  # j1_mass
+  - 12  # j2_pt
+  - 13  # j2_phi
+  - 14  # j2_eta
+  - 15  # j2_mass
+  - 16  # miss_pt
+  - 17  # miss_phi
+  # - 18  # miss_eta
+  # - 19  # miss_mass
+  # - 20  # multiplicity
+
+
+
+
+evaluate:
+  save_samples: false
+  save_data: false
+  evaluate_best: false
+  model_name: final
+
+plot:
+  include_SM_line: false
+  include_EFTchw0p5_line: false
+  include_EFT_chwtil5_line: false
+
+defaults:
+  - default
+  - _self_

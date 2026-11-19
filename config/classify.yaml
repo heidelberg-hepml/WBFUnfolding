@@ -1,0 +1,94 @@
+task: classification
+
+refiner:
+  use: false
+
+dataset:
+  use_HWW: true
+  use_ttbar: true
+  use_WWjj: true
+
+  background_mode: subtraction
+
+  channels:
+  - 0   # l1_pt
+  - 1   # l1_phi
+  - 2   # l1_eta
+  # # - 3   # l1_mass
+  - 4   # l2_pt
+  - 5   # l2_phi
+  - 6   # l2_eta
+  # # - 7   # l2_mass
+  - 8   # j1_pt
+  - 9   # j1_phi
+  - 10  # j1_eta
+  - 11  # j1_mass
+  - 12  # j2_pt
+  - 13  # j2_phi
+  - 14  # j2_eta
+  - 15  # j2_mass
+  - 16  # miss_pt
+  - 17  # miss_phi
+  # - 18  # miss_eta
+  # - 19  # miss_mass
+  # - 20  # multiplicity
+
+  features:
+    basic: true
+    dphi_ll: true
+    deta_ll: true
+    ET_ll: true
+    dphi_jj: true              # |dphi_jj|, pT-ordered (legacy input)
+    dphi_jj_signed_eta: false  # signed, eta-ordered dphi_jj (CP-odd sign); set true to use it
+    deta_jj: true
+    m_jj: true
+    mT: true
+
+
+  
+train:
+  ensemble: 1
+  # true: k-fold cross-fitting on the trn split (n_folds = ensemble); the trn weights that get
+  # dumped/applied come from the member that never saw each event (classification/main.py)
+  kfold: false
+  kfold_seed: 0   # >0: a different fold assignment (and member inits) on the same dataset
+
+  warm_start: false
+  checkpoint: best
+
+  lr: 0.0001
+  clip_grad_norm: 10
+  optimizer: adam
+  weight_decay: 0.0
+  calibration: none                     # [none, temperature] post-hoc logit calibration, fit on val
+  scheduler: CosineAnnealingLR          # [CosineAnnealingLR, ReduceLROnPlateau, null]
+  lr_factor: 0.5
+  lr_patience: 10
+  nits: 20_000
+  batch_size: 1024
+  batch_size_sample: 8192
+
+  early_stopping:
+    use: true
+    patience: 20
+
+evaluate:
+  save_samples: false
+  save_data: false
+  save_weights: true
+  # final checkpoints are yield-calibrated on the dump split; "best" is a val-noise
+  # minimum (often epoch 1-5) and inflates the (1-w) signal yield by 12-35%.
+  evaluate_best: false
+  model_name: final
+  bayesian_samples: 50
+
+plot:
+  debug: false
+  show_class_components:
+    p0: true
+    p1: false
+
+defaults:
+  - model: Classifier-250k
+  - classifying_defaults
+  - _self_

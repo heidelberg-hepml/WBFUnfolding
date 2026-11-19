@@ -1,0 +1,8 @@
+model: Classifier
+network: MLP
+hidden_layers: 6
+internal_size: 200
+dropout: 0.0        # >0 inserts nn.Dropout(p) after each ReLU (regularization lever)
+
+bayesian: false
+bayesian_factor: 1

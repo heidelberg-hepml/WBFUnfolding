@@ -1,0 +1,17 @@
+run:
+  type: train
+  name: null
+
+# Sample locations (absolute paths). Override with the environment variables or on the command
+# line, e.g. `python run.py -cn unfold data_dir=/abs/path/to/samples`.
+data_dir: ${oc.env:WBF_DATA_DIR,/path/to/samples}
+# trimmed background files, written by experiments/trim_background_files.py
+trimmed_dir: ${oc.env:WBF_TRIMMED_DIR,${data_dir}/trimmed}
+
+seed: null
+debug: false
+
+defaults:
+ - hydra
+ - mlflow
+ - _self_

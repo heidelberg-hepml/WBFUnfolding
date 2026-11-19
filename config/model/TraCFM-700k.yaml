@@ -1,0 +1,13 @@
+model: CFM
+network: Transformer
+dim_embedding: 64
+n_head: 4
+n_encoder_layers: 6
+n_decoder_layers: 6
+dim_feedforward: 256
+resid_pdrop: 0.0
+attn_pdrop: 0.0
+
+cond_x1: False
+noise_scale: 0.
+n_steps: 2

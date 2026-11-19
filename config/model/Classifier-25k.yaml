@@ -1,0 +1,4 @@
+model: Classifier
+network: MLP
+hidden_layers: 6
+internal_size: 64

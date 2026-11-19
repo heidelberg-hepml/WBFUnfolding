@@ -1,0 +1,73 @@
+dataset:
+  combined:
+    n_datasets: 3
+    use: false
+    # processes combined when use=true (each must have a full entry in unfolding_defaults.yaml).
+    # Default = the EFT triple (legacy). For the mixed signal+background unfolder use:
+    #   [signal, WWjj, ttbar]
+    processes: [signal, EFT_chw0p5, EFT_chwtil5]
+    dataset_ids: false       # load + split a per-process id tensor (needed for balance_mode != none)
+    # Whether the model is *conditioned* on the process id (8-dim embedding). Decoupled from
+    # dataset_ids so we can balance training fractions WITHOUT telling the model the process.
+    # Defaults to dataset_ids (legacy EFT runs stay conditioned). Set false for the unconditioned
+    # mixed unfolder.
+    condition_model: ${dataset.combined.dataset_ids}
+    # none | approx | strict. NOTE: approx is effectively a no-op (WeightedRandomSampler with
+    # num_samples=len and replacement=False is a weighted full permutation, so per-process counts
+    # are unchanged). Use `strict` (replacement=True) for genuine equal-fraction training.
+    balance_mode: approx
+    dim_embedding: 8
+
+    
+  special:
+    unfold_jets_only: false
+    unfold_higgs_system_only: false
+
+task: unfolding
+train:
+  warm_start: false
+  # true: save the full training state (last.pth) every epoch and, if it exists in run.path, continue
+  # EXACTLY from it (same nits budget, scheduler, early stopping, RNG). For runs longer than a job.
+  resume: false
+  max_hours: null       # with resume: pause gracefully at the first epoch end after this many hours
+  stop_after_its: null  # with resume: pause after this many iterations in this job (testing)
+  checkpoint: final
+  # iterative unfolding: npz with per-row parton prior weights {trn, val, tst}
+  part_weights: null
+  # fine-tuning: .pth of another run whose network initializes this one (optimizer/scheduler start fresh)
+  init_from: null
+
+  lr: 0.0001
+  clip_grad_norm: 10
+  optimizer: adam
+  scheduler: ReduceLROnPlateau          # [CosineAnnealingLR, ReduceLROnPlateau, null]
+  lr_factor: 0.5
+  lr_patience: 25
+  nits: 1_000_000
+  batch_size: 4096
+  batch_size_sample: 8192
+
+  early_stopping:
+    use: true
+    patience: 75
+
+evaluate:
+  dataset_subsets: []
+  save_samples: false
+  save_data: false
+  evaluate_best: false
+  model_name: final
+  # Path to the classifier's unfolding_weights_trn.pt (set to enable p_data unfolding).
+  # Also set dataset.p_data.data_path to the classifier run_dir in your run config.
+  unfold_data_weights: null
+
+plot:
+  include_SM_line: false
+  include_EFTchw0p5_line: false
+  include_EFT_chwtil5_line: false
+
+defaults:
+  - model: TraCFM-1.5M
+  # - model: TraCFM-700k
+  - unfolding_defaults
+  - _self_

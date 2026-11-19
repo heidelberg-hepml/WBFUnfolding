@@ -1,0 +1,12 @@
+model: Classifier        # Python class (keeps weighted-BCE loss + weight dump + ensemble)
+network: Transformer     # architecture branch in Model.init_network (encoder-only)
+
+# encoder-only transformer over per-channel tokens (one token per input channel).
+# constraint: dim_embedding >= dims_in + 1  (dims_in ~= 23 for the extended channel set)
+dim_embedding: 128
+n_head: 8
+n_encoder_layers: 6
+dim_feedforward: 128
+resid_pdrop: 0.0
+attn_pdrop: 0.0
+bayesian: false

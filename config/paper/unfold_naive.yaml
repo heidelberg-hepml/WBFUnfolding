@@ -1,0 +1,27 @@
+# @package _global_
+# Parton-level unfolder with the naive parameterization (lepton and quark p_T, phi, eta),
+# trained on the SM signal; the baseline for the transverse-mass parameterization.
+#   python run.py -cn paper/unfold_naive
+# The run in the paper predates the jet matching, the reco jet-mass condition and the
+# train-split standardization, so they are switched off here.
+defaults:
+  - /unfold
+  - _self_
+
+run:
+  name: unfold-naive
+seed: null
+dataset:
+  unfold_to: parton
+  process: signal
+  holdout_frac: 0
+  match_parton_jets: false
+  cond_jet_masses: false
+  standardize_on_trn: false
+  parameterization:
+    naive:
+      use: true
+    transverse_mass:
+      use: false
+      valid: false      # read even when use=false
+      balanced: false

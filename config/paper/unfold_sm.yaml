@@ -1,0 +1,15 @@
+# @package _global_
+# Parton-level unfolder trained on the SM signal, transverse-mass parameterization with all parton
+# cuts enforced (the defaults in unfolding_defaults.yaml).
+#   python run.py -cn paper/unfold_sm
+# Train on an EFT sample instead with dataset.process=EFT_chw0p5 (CP-even) or EFT_chwtil5 (CP-odd).
+defaults:
+  - /unfold
+  - _self_
+
+run:
+  name: unfold-sm
+seed: 0
+dataset:
+  unfold_to: parton
+  process: signal
